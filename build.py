@@ -356,12 +356,17 @@ def button(theme, label, primary=False):
 
 
 def footer(theme):
+    """Personal sign-off: name on the left, every venture's mark on equal footing on the right."""
     s = Svg(W, 64, theme); t = s.t
     s.add(f'<path d="M0 1H{W}" stroke="{t["line"]}"/>')
-    s.add(symbol(theme, 0, 24, 22))
-    s.text(32, 41, "Aion Group", "Outfit", 500, 15, t["fg"], track=-0.01)
-    s.text(W, 41, "DATA FIRST, AI SECOND", "JBM", 400, 10.5, t["faint"], track=0.14, anchor="end")
-    return s.render("Aion Group — Data first, AI second.")
+    s.add(f'<circle cx="5" cy="36" r="4" fill="{CORAL}"/>')
+    s.text(18, 41, "Thomas Visser", "Outfit", 500, 15, t["fg"], track=-0.01)
+    s.text(140, 41, "KNOWLEDGE THAT COMPOUNDS", "JBM", 400, 10, t["faint"], track=0.14)
+    size, gap = 22, 8
+    x = W - len(VENTURES) * size - (len(VENTURES) - 1) * gap
+    for v in VENTURES:
+        s.add(logo_tile(v[0], x, 25, size)); x += size + gap
+    return s.render("Thomas Visser — Knowledge that compounds.")
 
 
 def main():
@@ -375,15 +380,14 @@ def main():
         files[f"s-principles-{th}"] = section(th, "02", "Method", "Engineering standards.")
         files[f"s-stack-{th}"] = section(th, "03", "Stack", "Research to production.")
         files[f"s-contact-{th}"] = section(th, "04", "Contact", "Let's talk.",
-                                           "Working on a financial product with a decision to optimise? Plan a call.")
+                                           "Open to conversations on quant, data and applied AI — reach me directly.")
         for i, v in enumerate(VENTURES, 1):
             files[f"v-0{i}-{th}"] = venture(th, v)
         files[f"principles-{th}"] = principles(th)
         files[f"stack-{th}"] = stack(th)
-        files[f"btn-call-{th}"] = button(th, "Plan a call", primary=True)
-        files[f"btn-site-{th}"] = button(th, "aiongp.com")
-        files[f"btn-linkedin-{th}"] = button(th, "LinkedIn")
-        files[f"btn-mail-{th}"] = button(th, "info@aiongp.com")
+        files[f"btn-linkedin-{th}"] = button(th, "Connect on LinkedIn", primary=True)
+        files[f"btn-github-{th}"] = button(th, "Follow on GitHub")
+        files[f"btn-instagram-{th}"] = button(th, "Instagram")
         files[f"footer-{th}"] = footer(th)
     total = 0
     for name, svg in files.items():
