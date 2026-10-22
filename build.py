@@ -80,10 +80,30 @@ class Svg:
                 f'<style>{self.fonts_css()}{anim_css}</style>' + "".join(self.parts) + "</svg>")
 
 
-def frame(svg, r=16, fill=None):
-    t = svg.t
-    svg.add(f'<rect x="0.5" y="0.5" width="{svg.w-1}" height="{svg.h-1}" rx="{r}" '
-            f'fill="{fill or t["card"]}" stroke="{t["line"]}"/>')
+_fid = [0]
+
+
+def frame(svg, r=16, fill=None, tick=True, glow=True):
+    """aiongp.com card: top-lit gradient, coral glow from the bottom-right, coral tick on the top edge."""
+    t = svg.t; _fid[0] += 1; i = _fid[0]
+    dark = svg.theme == "dark"
+    top, bot = ("#17171A", "#0A0A0C") if dark else ("#FFFFFF", "#F3F2EE")
+    ga = .16 if dark else .10
+    svg.add(f'<defs><linearGradient id="cg{i}" x1="0" y1="0" x2="0" y2="1">'
+            f'<stop offset="0" stop-color="{top}"/><stop offset="1" stop-color="{bot}"/></linearGradient>'
+            f'<radialGradient id="cr{i}" cx="1" cy="1" r="0.9" gradientTransform="translate(0 0)">'
+            f'<stop offset="0" stop-color="{CORAL}" stop-opacity="{ga}"/>'
+            f'<stop offset="1" stop-color="{CORAL}" stop-opacity="0"/></radialGradient>'
+            f'<linearGradient id="cs{i}" x1="0" y1="0" x2="0" y2="1">'
+            f'<stop offset="0" stop-color="{"#FFFFFF" if dark else "#0B0C10"}" stop-opacity="{.16 if dark else .14}"/>'
+            f'<stop offset="1" stop-color="{"#FFFFFF" if dark else "#0B0C10"}" stop-opacity="{.05 if dark else .08}"/></linearGradient></defs>')
+    box = f'x="0.5" y="0.5" width="{svg.w-1}" height="{svg.h-1}" rx="{r}"'
+    svg.add(f'<rect {box} fill="{fill or f"url(#cg{i})"}"/>')
+    if glow:
+        svg.add(f'<rect {box} fill="url(#cr{i})"/>')
+    svg.add(f'<rect {box} fill="none" stroke="url(#cs{i})"/>')
+    if tick:
+        svg.add(f'<path d="M{r+8} 0.75H{r+38}" stroke="{CORAL}" stroke-width="1.5"/>')
 
 
 def crosshairs(svg, inset=18, n=7):
@@ -107,27 +127,69 @@ def symbol(theme, x, y, size, a_fill=CORAL, g_fill=None):
 W = 880
 
 
+def smoke(w, h, n=46, seed=7):
+    """Port of the aiongp.com hero 'smoke' canvas: drifting elliptical plumes, additive blend.
+    Each plume follows the same Lissajous path as the site (cos(a+t), sin(1.3a+k+t)) as a looping SMIL motion."""
+    import math, random
+    rnd = random.Random(seed)
+    cols = ["#FFFFFF"] * 4 + ["#FF7846"]
+    out = ['<defs>']
+    plumes = []
+    for i in range(n):
+        a, r, k, z = rnd.random() * 6.28, .25 + rnd.random() * .32, rnd.random() * 6.28, .45 + rnd.random() * .9
+        c, o = cols[i % 5], (.05 if i % 5 > 2 else .06) * 1.35
+        R = min(w, h) * .28 * z * 1.25
+        out.append(f'<radialGradient id="sg{i}" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="{R:.1f}">'
+                   f'<stop offset="0" stop-color="{c}" stop-opacity="{o:.3f}"/>'
+                   f'<stop offset="1" stop-color="{c}" stop-opacity="0"/></radialGradient>')
+        pts = []
+        for j in range(61):
+            tt = j / 60 * 2 * math.pi
+            pts.append((w * .5 + math.cos(a + tt) * w * r * .9, h * .45 + math.sin(a * 1.3 + k + tt) * h * r * .6))
+        d = "M" + "L".join(f"{x:.1f} {y:.1f}" for x, y in pts) + "Z"
+        dur = 70 + rnd.random() * 50
+        plumes.append(f'<g style="mix-blend-mode:plus-lighter"><ellipse rx="{R*1.7:.1f}" ry="{R*.55:.1f}" '
+                      f'transform="rotate({math.degrees(a*.6):.1f})" fill="url(#sg{i})"/>'
+                      f'<animateMotion dur="{dur:.0f}s" repeatCount="indefinite" path="{d}"/></g>')
+    out.append('</defs>')
+    return "".join(out) + "".join(plumes)
+
+
 def hero(theme):
-    s = Svg(W, 300, theme); t = s.t
-    s.add(f'<defs><clipPath id="c"><rect x="0.5" y="0.5" width="{W-1}" height="299" rx="18"/></clipPath>'
-          f'<linearGradient id="fade" x1="0" x2="1"><stop offset="0" stop-color="{t["bg"]}"/>'
-          f'<stop offset=".6" stop-color="{t["bg"]}" stop-opacity="0"/></linearGradient></defs>')
-    s.add(f'<rect x="0.5" y="0.5" width="{W-1}" height="299" rx="18" fill="{t["bg"]}" stroke="{t["line"]}"/>')
+    # The hero is always dark, exactly like the aiongp.com header, in both GitHub themes.
+    H = 360
+    s = Svg(W, H, "dark"); t = s.t
+    s.add(f'<defs><clipPath id="c"><rect x="0.5" y="0.5" width="{W-1}" height="{H-1}" rx="18"/></clipPath>'
+          f'<linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset=".62" stop-color="#000" stop-opacity="0"/>'
+          f'<stop offset="1" stop-color="#000"/></linearGradient>'
+          f'<radialGradient id="vig" cx=".5" cy=".45" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/>'
+          f'<stop offset="1" stop-color="#000" stop-opacity=".7"/></radialGradient>'
+          f'<radialGradient id="ember" cx=".72" cy=".72" r=".45"><stop offset="0" stop-color="{CORAL}" stop-opacity=".10"/>'
+          f'<stop offset="1" stop-color="{CORAL}" stop-opacity="0"/></radialGradient>'
+          f'<linearGradient id="rule" x1="0" x2="1"><stop offset="0" stop-color="{CORAL}" stop-opacity="0"/>'
+          f'<stop offset=".5" stop-color="{CORAL}"/><stop offset="1" stop-color="{CORAL}" stop-opacity="0"/></linearGradient></defs>')
     s.add('<g clip-path="url(#c)">')
-    s.add(f'<g class="mark">{symbol(theme, 572, 22, 280)}</g>')
-    s.add(f'<rect width="{W}" height="300" fill="url(#fade)"/>')
+    s.add(f'<rect width="{W}" height="{H}" fill="#000"/>')
+    s.add(f'<g style="isolation:isolate">{smoke(W, H)}</g>')
+    s.add(f'<rect width="{W}" height="{H}" fill="url(#ember)"/>')
+    s.add(f'<rect width="{W}" height="{H}" fill="url(#vig)"/>')
+    s.add(f'<rect width="{W}" height="{H}" fill="url(#fade)"/>')
     s.add('</g>')
-    s.add(f'<circle class="pulse" cx="52" cy="76" r="4" fill="{CORAL}"/>')
-    s.text(64, 80, "FOUNDER — AION GROUP", "JBM", 400, 11.5, t["muted"], track=0.14)
-    s.text(46, 156, "Thomas Visser", "Outfit", 500, 58, t["fg"], track=-0.025)
-    s.text(46, 204, "Knowledge that compounds", "Outfit", 300, 32, t["muted"], track=-0.02)
-    tw = width("Knowledge that compounds", "Outfit", 300, 32, -0.02)
-    s.text(46 + tw + 1, 204, ".", "Outfit", 500, 32, CORAL)
-    s.text(46, 246, "Quant models, data architecture & applied AI.", "Outfit", 400, 15.5, t["faint"])
-    css = ("@keyframes p{0%,100%{opacity:1}50%{opacity:.25}}.pulse{animation:p 2.4s ease-in-out infinite}"
-           "@keyframes r{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}"
-           ".mark{animation:r 1.1s cubic-bezier(.2,.7,.2,1) both}")
-    return s.render("Thomas Visser — Founder, Aion Group. Knowledge that compounds.", css)
+    s.add(f'<rect x="0.5" y="0.5" width="{W-1}" height="{H-1}" rx="18" fill="none" stroke="#FFFFFF14"/>')
+    cx = W / 2
+    s.text(cx, 92, "FOUNDER  ·  NETHERLANDS", "JBM", 400, 11, "#FFFFFFA6", track=0.18, anchor="middle")
+    s.text(cx, 176, "Thomas Visser", "Outfit", 500, 72, "#FFFFFF", track=-0.03, anchor="middle")
+    tw1 = width("Knowledge that ", "Outfit", 400, 34, -0.02)
+    tw2 = width("compounds.", "Outfit", 400, 34, -0.02)
+    x0 = cx - (tw1 + tw2) / 2
+    s.text(x0, 226, "Knowledge that ", "Outfit", 400, 34, "#FFFFFF73", track=-0.02, extra='xml:space="preserve"')
+    s.text(x0 + tw1, 226, "compounds", "Outfit", 400, 34, "#FFFFFF", track=-0.02)
+    s.text(x0 + tw1 + width("compounds", "Outfit", 400, 34, -0.02) + 1, 226, ".", "Outfit", 500, 34, CORAL)
+    s.text(cx, 272, "Quant  |  Data architecture  |  Applied AI  |  Building in the open", "Outfit", 400, 15,
+           "#FFFFFFD9", anchor="middle", extra='xml:space="preserve"')
+    s.add(f'<path class="rule" d="M{cx-70} 306H{cx+70}" stroke="url(#rule)" stroke-width="1.5"/>')
+    css = ("@keyframes rl{0%,100%{opacity:.35}50%{opacity:1}}.rule{animation:rl 3.2s ease-in-out infinite}")
+    return s.render("Thomas Visser — Knowledge that compounds. Quant, data architecture, applied AI.", css)
 
 
 def section(theme, num, label, title, sub=None):
@@ -240,10 +302,12 @@ def button(theme, label, primary=False):
     tw = width(label, "Outfit", 500, 14.5) + width(" ↗", "JBM", 400, 13)
     s = Svg(int(tw + pad * 2 + 6), 46, theme); t = s.t
     if primary:
-        s.add(f'<rect x="0.5" y="0.5" width="{s.w-1}" height="45" rx="23" fill="{CORAL}"/>')
+        s.add('<defs><linearGradient id="bg" x1="0" x2="1"><stop offset="0" stop-color="#FF6B3D"/>'
+              '<stop offset="1" stop-color="#FFB894"/></linearGradient></defs>')
+        s.add(f'<rect x="0.5" y="0.5" width="{s.w-1}" height="45" rx="10" fill="url(#bg)"/>')
         fg = "#0B0C10"
     else:
-        s.add(f'<rect x="0.5" y="0.5" width="{s.w-1}" height="45" rx="23" fill="{t["card"]}" stroke="{t["line"]}"/>')
+        frame(s, 10, tick=False, glow=False)
         fg = t["fg"]
     s.text(pad, 28.5, label, "Outfit", 500, 14.5, fg)
     s.text(s.w - pad, 28.5, "↗", "JBM", 400, 13, fg if primary else CORAL, anchor="end")
@@ -285,6 +349,15 @@ def main():
         (OUT / f"{name}.svg").write_text(svg)
         total += len(svg)
     print(f"{len(files)} svgs, {total/1024:.0f} KB total")
+    # cache-bust: GitHub/raw caches images by URL, so stamp each src with its content hash
+    import hashlib
+    readme = ROOT / "README.md"
+    md = readme.read_text()
+    def stamp(m):
+        name = m.group(1)
+        h = hashlib.sha1((OUT / f"{name}.svg").read_bytes()).hexdigest()[:8]
+        return f"./assets/{name}.svg?v={h}"
+    readme.write_text(re.sub(r"\./assets/([\w-]+)\.svg(?:\?v=\w+)?", stamp, md))
 
 
 if __name__ == "__main__":
