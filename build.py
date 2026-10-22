@@ -288,54 +288,98 @@ def principles(theme):
     return s.render("Engineering standards — " + "; ".join(p[0] for p in PRINCIPLES))
 
 
-STACK = [
-    ("Quant research", ["Qlib", "Kronos K-line FM", "walk-forward", "RankIC / IC", "long-short sim", "point-in-time"]),
-    ("Optimisation & risk", ["mean-variance", "risk parity", "VaR / ES", "stress tests", "TCA", "hedging"]),
-    ("Machine learning", ["PyTorch", "CUDA", "time-series", "quantile forecasts", "ensembles", "evals"]),
-    ("Retrieval & agents", ["Docling", "pgvector", "hybrid search", "reranking", "MCP", "sub-agents", "context compaction"]),
-    ("Data platform", ["PostgreSQL", "PL/pgSQL", "Supabase", "Drizzle", "knowledge graphs", "dedup & hashing"]),
-    ("Product engineering", ["TypeScript", "Next.js", "tRPC", "React", "Electron", "Pixi.js", "lightweight-charts"]),
-    ("Infra", ["Docker", "code sandboxes", "GitHub Actions", "Vercel", "Linux"]),
+ICONS = ROOT / "src/icons"  # simple-icons (CC0), rendered monochrome
+
+LAYERS = [
+    ("L4", "Interface", [("TypeScript", "typescript"), ("React", "react"), ("Next.js", "nextdotjs"), ("Vite", "vite"),
+                         ("Tailwind", "tailwindcss"), ("tRPC", "trpc"), ("Electron", "electron"), ("lightweight-charts", "tradingview")]),
+    ("L3", "Agents & inference", [("Anthropic", "anthropic"), ("OpenAI", "openai"), ("OpenRouter", "openrouter"), ("Ollama", "ollama"),
+                                  ("MCP", "modelcontextprotocol"), ("FastAPI", "fastapi"), ("LangSmith", "langchain")]),
+    ("L2", "Models & research", [("Python", "python"), ("PyTorch", "pytorch"), ("CUDA", "nvidia"), ("Hugging Face", "huggingface"),
+                                 ("Qlib", None), ("Kronos", None), ("NumPy", "numpy"), ("pandas", "pandas")]),
+    ("L1", "Data & retrieval", [("PostgreSQL", "postgresql"), ("pgvector", None), ("Supabase", "supabase"), ("Drizzle", "drizzle"),
+                                ("Docling", None), ("spaCy", None), ("Presidio", None)]),
+    ("L0", "Runtime", [("Docker", "docker"), ("GitHub Actions", "githubactions"), ("Vercel", "vercel"), ("Linux", "linux")]),
 ]
+METHODS = "mean-variance · risk parity · VaR / ES · walk-forward · point-in-time · RankIC · quantile bands · TCA"
 
 
-def chip(s, x, y, label):
-    t = s.t
-    w = width(label.upper(), "JBM", 400, 10, 0.08) + 18
-    s.add(f'<rect x="{x}" y="{y}" width="{w:.1f}" height="22" rx="5" fill="none" stroke="{t["line"]}"/>')
-    s.text(x + 9, y + 15, label.upper(), "JBM", 400, 10, t["muted"], track=0.08)
-    return w
+def icon(slug, x, y, size, fill):
+    svg = (ICONS / f"{slug}.svg").read_text()
+    d = re.search(r'<path d="([^"]+)"', svg).group(1)
+    return f'<path transform="translate({x} {y}) scale({size/24:.4f})" d="{d}" fill="{fill}"/>'
 
 
 def stack(theme):
-    lx, x0, x1 = 26, 214, W - 26
-    # lay out chips first to know each row's height
+    x0, x1 = 236, W - 26
+    ch, gap, lg = 28, 8, 8
+    fs = 12.5
+
+    def cw(label, slug):
+        return width(label, "Outfit", 500, fs) + 40
+
     rows = []
-    for k, items in STACK:
-        lines, cur, cx = [], [], x0
-        for it in items:
-            w = width(it.upper(), "JBM", 400, 10, 0.08) + 18
-            if cur and cx + w > x1:
-                lines.append(cur); cur, cx = [], x0
-            cur.append(it); cx += w + 7
-        lines.append(cur); rows.append((k, lines))
-    pad = 15
-    hs = [len(l) * 22 + (len(l) - 1) * 7 + pad * 2 for _, l in rows]
-    s = Svg(W, sum(hs) + 24, theme); t = s.t
+    for lid, name, items in LAYERS:
+        total = sum(cw(*it) for it in items) + gap * (len(items) - 1)
+        if total <= x1 - x0:
+            lines = [items]
+        else:  # balanced two-line split instead of a lonely orphan chip
+            k = (len(items) + 1) // 2
+            lines = [items[:k], items[k:]]
+        rows.append((lid, name, lines))
+    pad = 18
+    hs = [len(l) * ch + (len(l) - 1) * lg + pad * 2 for *_, l in rows]
+    top = 14
+    body_h = sum(hs)
+    H = top + body_h + 82
+    s = Svg(W, H, theme); t = s.t
     frame(s, 16)
-    y = 12
-    for i, ((k, lines), h) in enumerate(zip(rows, hs)):
+    ink = t["fg"]
+    chipfill = "#FFFFFF08" if theme == "dark" else "#0B0C1005"
+    # rail: data flows up from runtime to interface
+    centers, y = [], top
+    for h in hs:
+        centers.append(y + h / 2); y += h
+    rx = 40
+    s.add(f'<defs><linearGradient id="rail" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="{CORAL}" stop-opacity=".15"/>'
+          f'<stop offset="1" stop-color="{CORAL}" stop-opacity=".7"/></linearGradient>'
+          f'<radialGradient id="pg"><stop offset="0" stop-color="{CORAL}"/><stop offset="1" stop-color="{CORAL}" stop-opacity="0"/></radialGradient></defs>')
+    s.add(f'<path d="M{rx} {centers[0]}V{centers[-1]}" stroke="url(#rail)" stroke-width="1.5"/>')
+    s.add(f'<g><circle r="9" fill="url(#pg)" opacity=".8"/><circle r="2.5" fill="{CORAL}"/>'
+          f'<animateMotion dur="4.5s" repeatCount="indefinite" path="M{rx} {centers[-1]}V{centers[0]}" '
+          f'keyTimes="0;1" calcMode="spline" keySplines=".4 0 .2 1"/></g>')
+    y = top
+    for i, ((lid, name, lines), h) in enumerate(zip(rows, hs)):
         if i:
-            s.add(f'<path d="M26 {y}H{W-26}" stroke="{t["line"]}"/>')
-        s.text(lx, y + pad + 15, k.upper(), "JBM", 400, 10.5, CORAL, track=0.12)
+            s.add(f'<path d="M64 {y}H{W-26}" stroke="{t["line"]}"/>')
+        c = centers[i]
+        s.add(f'<circle cx="{rx}" cy="{c}" r="5" fill="{t["bg"] if theme=="dark" else "#FFFFFF"}" stroke="{CORAL}" stroke-width="1.5"/>')
+        s.text(64, c - 3, lid, "JBM", 400, 10.5, CORAL, track=0.12)
+        s.text(64, c + 14, name.upper(), "JBM", 400, 10.5, t["muted"], track=0.1)
         yy = y + pad
         for line in lines:
             cx = x0
-            for it in line:
-                cx += chip(s, cx, yy, it) + 7
-            yy += 29
+            for label, slug in line:
+                w = cw(label, slug)
+                s.add(f'<rect x="{cx}" y="{yy}" width="{w:.1f}" height="{ch}" rx="7" fill="{chipfill}" stroke="{t["line"]}"/>')
+                tx = cx + 11
+                if slug:
+                    s.add(icon(slug, cx + 10, yy + 7.5, 13, ink))
+                else:
+                    s.add(f'<rect x="{cx + 13}" y="{yy + 11}" width="6" height="6" rx="1.5" fill="{CORAL}"/>')
+                tx = cx + 30
+                s.text(tx, yy + 18.5, label, "Outfit", 500, fs, ink)
+                cx += w + gap
+            yy += ch + lg
         y += h
-    return s.render("Stack — " + "; ".join(f"{k}: {', '.join(v)}" for k, v in STACK))
+    # methods strip
+    s.add(f'<path d="M26 {y}H{W-26}" stroke="{t["line"]}"/>')
+    s.text(26, y + 34, "METHODS", "JBM", 400, 10.5, CORAL, track=0.12)
+    ms = [m.strip() for m in METHODS.split("·")]
+    half = (len(ms) + 1) // 2
+    s.text(x0, y + 34, "  ·  ".join(ms[:half]), "JBM", 400, 11, t["muted"], track=0.02, extra='xml:space="preserve"')
+    s.text(x0, y + 56, "  ·  ".join(ms[half:]), "JBM", 400, 11, t["muted"], track=0.02, extra='xml:space="preserve"')
+    return s.render("Stack — " + "; ".join(f"{n}: {', '.join(l for l, _ in it)}" for _, n, it in LAYERS) + ". Methods: " + METHODS)
 
 
 def button(theme, label, primary=False):
@@ -356,16 +400,11 @@ def button(theme, label, primary=False):
 
 
 def footer(theme):
-    """Personal sign-off: name on the left, every venture's mark on equal footing on the right."""
     s = Svg(W, 64, theme); t = s.t
     s.add(f'<path d="M0 1H{W}" stroke="{t["line"]}"/>')
     s.add(f'<circle cx="5" cy="36" r="4" fill="{CORAL}"/>')
     s.text(18, 41, "Thomas Visser", "Outfit", 500, 15, t["fg"], track=-0.01)
-    s.text(140, 41, "KNOWLEDGE THAT COMPOUNDS", "JBM", 400, 10, t["faint"], track=0.14)
-    size, gap = 22, 8
-    x = W - len(VENTURES) * size - (len(VENTURES) - 1) * gap
-    for v in VENTURES:
-        s.add(logo_tile(v[0], x, 25, size)); x += size + gap
+    s.text(W, 41, "KNOWLEDGE THAT COMPOUNDS", "JBM", 400, 10, t["faint"], track=0.14, anchor="end")
     return s.render("Thomas Visser — Knowledge that compounds.")
 
 
