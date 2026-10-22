@@ -253,48 +253,89 @@ def venture(theme, v):
 
 
 PRINCIPLES = [
-    ("Data first,", "AI second.", "Models are only as strong", "as the data beneath them."),
-    ("Evidence", "by default.", "Every model has to beat an", "honest baseline, out of sample."),
-    ("No model", "lock-in.", "Swap providers and models", "without rebuilding the stack."),
-    ("You keep", "the keys.", "Code, data and models are", "handed over — yours to own."),
+    ("Point-in-time or nothing", ["As-of data, walk-forward splits and", "no look-ahead — the backtest is the", "test, not the brochure."],
+     "as_of(t) · walk-forward · no leakage"),
+    ("Baselines are the bar", ["Every model is scored out of sample", "against naive persistence before it", "earns a place in production."],
+     "RMSE · MAPE · hit-rate · RankIC"),
+    ("Uncertainty is output", ["Forecasts ship with quantile bands", "and a measured trust horizon —", "not a single confident line."],
+     "p10–p90 · horizon decay"),
+    ("Grounded or silent", ["Retrieval over parsed documents with", "hybrid search, reranking and verbatim,", "quote-level citations."],
+     "pgvector · hybrid · rerank · cite"),
+    ("Model-agnostic by design", ["Providers swap behind one tool", "registry; agents run in isolated", "contexts with MCP for the edges."],
+     "LLM_PROVIDER=* · MCP · sub-agents"),
+    ("Your data, your keys", ["Self-hosted, PII redacted with", "reversible surrogates; code, data", "and models handed over."],
+     "self-host · Presidio · Docker"),
 ]
 
 
 def principles(theme):
-    s = Svg(W, 182, theme); t = s.t
+    cols, rows = 3, 2
+    cw, rh = W / cols, 178
+    s = Svg(W, rh * rows + 4, theme); t = s.t
     frame(s, 16)
-    cw = W / 4
-    for i, (a, b, c, d) in enumerate(PRINCIPLES):
-        x = i * cw + 26
-        if i:
-            s.add(f'<path d="M{i*cw} 30V152" stroke="{t["line"]}"/>')
-        s.text(x, 62, a, "Outfit", 500, 21, t["fg"], track=-0.02)
-        s.text(x, 88, b, "Outfit", 500, 21, t["muted"], track=-0.02)
-        s.text(x, 128, c, "Outfit", 400, 12.8, t["muted"])
-        s.text(x, 147, d, "Outfit", 400, 12.8, t["muted"])
-    return s.render("Principles: Data first, AI second. Evidence by default. No model lock-in. You keep the keys.")
+    for i, (title, body, spec) in enumerate(PRINCIPLES):
+        c, r = i % cols, i // cols
+        x, y = c * cw + 26, r * rh
+        if c:
+            s.add(f'<path d="M{c*cw} {y+24}V{y+rh-20}" stroke="{t["line"]}"/>')
+        if r:
+            s.add(f'<path d="M26 {y}H{W-26}" stroke="{t["line"]}"/>')
+        s.text(x, y + 40, f"0{i+1}", "JBM", 400, 11, CORAL, track=0.1)
+        s.text(x, y + 66, title, "Outfit", 500, 17.5, t["fg"], track=-0.015)
+        for j, line in enumerate(body):
+            s.text(x, y + 92 + j * 18, line, "Outfit", 400, 12.8, t["muted"])
+        s.text(x, y + 158, spec, "JBM", 400, 10.5, t["faint"], track=0.02)
+    return s.render("Engineering standards — " + "; ".join(p[0] for p in PRINCIPLES))
 
 
 STACK = [
-    ("Quant & ML", "Python · PyTorch · Qlib · Kronos · CUDA · walk-forward backtesting"),
-    ("Data", "Postgres · Supabase · Drizzle · knowledge graphs · RAG pipelines"),
-    ("AI", "Anthropic · OpenAI · local models · agentic workflows · evals"),
-    ("Product", "TypeScript · Next.js · React · tRPC · Electron · Tailwind"),
-    ("Infra", "Docker · Vercel · GitHub Actions · Linux"),
+    ("Quant research", ["Qlib", "Kronos K-line FM", "walk-forward", "RankIC / IC", "long-short sim", "point-in-time"]),
+    ("Optimisation & risk", ["mean-variance", "risk parity", "VaR / ES", "stress tests", "TCA", "hedging"]),
+    ("Machine learning", ["PyTorch", "CUDA", "time-series", "quantile forecasts", "ensembles", "evals"]),
+    ("Retrieval & agents", ["Docling", "pgvector", "hybrid search", "reranking", "MCP", "sub-agents", "context compaction"]),
+    ("Data platform", ["PostgreSQL", "PL/pgSQL", "Supabase", "Drizzle", "knowledge graphs", "dedup & hashing"]),
+    ("Product engineering", ["TypeScript", "Next.js", "tRPC", "React", "Electron", "Pixi.js", "lightweight-charts"]),
+    ("Infra", ["Docker", "code sandboxes", "GitHub Actions", "Vercel", "Linux"]),
 ]
 
 
+def chip(s, x, y, label):
+    t = s.t
+    w = width(label.upper(), "JBM", 400, 10, 0.08) + 18
+    s.add(f'<rect x="{x}" y="{y}" width="{w:.1f}" height="22" rx="5" fill="none" stroke="{t["line"]}"/>')
+    s.text(x + 9, y + 15, label.upper(), "JBM", 400, 10, t["muted"], track=0.08)
+    return w
+
+
 def stack(theme):
-    rh = 44
-    s = Svg(W, 28 + rh * len(STACK), theme); t = s.t
+    lx, x0, x1 = 26, 214, W - 26
+    # lay out chips first to know each row's height
+    rows = []
+    for k, items in STACK:
+        lines, cur, cx = [], [], x0
+        for it in items:
+            w = width(it.upper(), "JBM", 400, 10, 0.08) + 18
+            if cur and cx + w > x1:
+                lines.append(cur); cur, cx = [], x0
+            cur.append(it); cx += w + 7
+        lines.append(cur); rows.append((k, lines))
+    pad = 15
+    hs = [len(l) * 22 + (len(l) - 1) * 7 + pad * 2 for _, l in rows]
+    s = Svg(W, sum(hs) + 24, theme); t = s.t
     frame(s, 16)
-    for i, (k, v) in enumerate(STACK):
-        y = 14 + i * rh
+    y = 12
+    for i, ((k, lines), h) in enumerate(zip(rows, hs)):
         if i:
             s.add(f'<path d="M26 {y}H{W-26}" stroke="{t["line"]}"/>')
-        s.text(26, y + 28, k.upper(), "JBM", 400, 11, CORAL, track=0.12)
-        s.text(190, y + 28.5, v, "Outfit", 400, 15, t["fg"])
-    return s.render("Toolkit — " + "; ".join(f"{k}: {v}" for k, v in STACK))
+        s.text(lx, y + pad + 15, k.upper(), "JBM", 400, 10.5, CORAL, track=0.12)
+        yy = y + pad
+        for line in lines:
+            cx = x0
+            for it in line:
+                cx += chip(s, cx, yy, it) + 7
+            yy += 29
+        y += h
+    return s.render("Stack — " + "; ".join(f"{k}: {', '.join(v)}" for k, v in STACK))
 
 
 def button(theme, label, primary=False):
@@ -331,8 +372,8 @@ def main():
     for th in THEMES:
         files[f"hero-{th}"] = hero(th)
         files[f"s-ventures-{th}"] = section(th, "01", "Ventures", "What I'm building.")
-        files[f"s-principles-{th}"] = section(th, "02", "Principles", "How I work.")
-        files[f"s-stack-{th}"] = section(th, "03", "Toolkit", "What I build with.")
+        files[f"s-principles-{th}"] = section(th, "02", "Method", "Engineering standards.")
+        files[f"s-stack-{th}"] = section(th, "03", "Stack", "Research to production.")
         files[f"s-contact-{th}"] = section(th, "04", "Contact", "Let's talk.",
                                            "Working on a financial product with a decision to optimise? Plan a call.")
         for i, v in enumerate(VENTURES, 1):
