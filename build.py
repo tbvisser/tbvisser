@@ -108,37 +108,22 @@ W = 880
 
 
 def hero(theme):
-    s = Svg(W, 340, theme); t = s.t
-    s.add(f'<defs><clipPath id="c"><rect x="0.5" y="0.5" width="{W-1}" height="339" rx="18"/></clipPath>'
-          f'<pattern id="d" width="22" height="22" patternUnits="userSpaceOnUse">'
-          f'<circle cx="1" cy="1" r="1" fill="{t["grid"]}"/></pattern>'
+    s = Svg(W, 300, theme); t = s.t
+    s.add(f'<defs><clipPath id="c"><rect x="0.5" y="0.5" width="{W-1}" height="299" rx="18"/></clipPath>'
           f'<linearGradient id="fade" x1="0" x2="1"><stop offset="0" stop-color="{t["bg"]}"/>'
-          f'<stop offset=".55" stop-color="{t["bg"]}" stop-opacity="0"/></linearGradient></defs>')
-    s.add(f'<rect x="0.5" y="0.5" width="{W-1}" height="339" rx="18" fill="{t["bg"]}" stroke="{t["line"]}"/>')
+          f'<stop offset=".6" stop-color="{t["bg"]}" stop-opacity="0"/></linearGradient></defs>')
+    s.add(f'<rect x="0.5" y="0.5" width="{W-1}" height="299" rx="18" fill="{t["bg"]}" stroke="{t["line"]}"/>')
     s.add('<g clip-path="url(#c)">')
-    s.add(f'<rect width="{W}" height="340" fill="url(#d)"/>')
-    # construction lines behind the mark (brand board motif)
-    for x in (560, 700, 840):
-        s.add(f'<path d="M{x} 0V340" stroke="{t["grid"]}"/>')
-    for y in (90, 250):
-        s.add(f'<path d="M520 {y}H{W}" stroke="{t["grid"]}"/>')
-    s.add(f'<circle cx="700" cy="170" r="150" fill="none" stroke="{t["grid"]}"/>')
-    s.add(f'<g class="mark">{symbol(theme, 548, 26, 300)}</g>')
-    s.add(f'<rect width="{W}" height="340" fill="url(#fade)"/>')
+    s.add(f'<g class="mark">{symbol(theme, 572, 22, 280)}</g>')
+    s.add(f'<rect width="{W}" height="300" fill="url(#fade)"/>')
     s.add('</g>')
-    crosshairs(s)
-    # copy
-    s.add(f'<circle class="pulse" cx="52" cy="70" r="4" fill="{CORAL}"/>')
-    s.text(64, 74, "FOUNDER — AION GROUP", "JBM", 400, 11.5, t["muted"], track=0.14)
-    s.text(46, 150, "Thomas Visser", "Outfit", 500, 58, t["fg"], track=-0.025)
-    s.text(46, 200, "Knowledge that compounds", "Outfit", 300, 34, t["muted"], track=-0.02,
-           extra='')
-    tw = width("Knowledge that compounds", "Outfit", 300, 34, -0.02)
-    s.text(46 + tw + 1, 200, ".", "Outfit", 500, 34, CORAL)
-    s.add(f'<path d="M48 236H112" stroke="{CORAL}" stroke-width="2"/>')
-    s.text(46, 270, "Quant models, data architecture & applied AI —", "Outfit", 400, 15.5, t["muted"])
-    s.text(46, 292, "measured against a baseline, built to keep.", "Outfit", 400, 15.5, t["muted"])
-    s.text(W - 46, 304, "NETHERLANDS", "JBM", 400, 10.5, t["faint"], track=0.14, anchor="end")
+    s.add(f'<circle class="pulse" cx="52" cy="76" r="4" fill="{CORAL}"/>')
+    s.text(64, 80, "FOUNDER — AION GROUP", "JBM", 400, 11.5, t["muted"], track=0.14)
+    s.text(46, 156, "Thomas Visser", "Outfit", 500, 58, t["fg"], track=-0.025)
+    s.text(46, 204, "Knowledge that compounds", "Outfit", 300, 32, t["muted"], track=-0.02)
+    tw = width("Knowledge that compounds", "Outfit", 300, 32, -0.02)
+    s.text(46 + tw + 1, 204, ".", "Outfit", 500, 32, CORAL)
+    s.text(46, 246, "Quant models, data architecture & applied AI.", "Outfit", 400, 15.5, t["faint"])
     css = ("@keyframes p{0%,100%{opacity:1}50%{opacity:.25}}.pulse{animation:p 2.4s ease-in-out infinite}"
            "@keyframes r{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}"
            ".mark{animation:r 1.1s cubic-bezier(.2,.7,.2,1) both}")
@@ -155,28 +140,54 @@ def section(theme, num, label, title, sub=None):
 
 
 VENTURES = [
-    ("01", "Aion Group", "Founder", "Algorithms & quant optimisation", "for financial products.", "aiongp.com", True),
-    ("02", "Verticallm", "Venture", "Supply chain strategy,", "delivered by AI.", "verticallm.ai", False),
-    ("03", "tradeflow.so", "Venture", "Trading dashboard", "& trade replay.", "tradeflow.so", False),
-    ("04", "Locally", "Venture", "Local-first AI for", "one-person businesses.", "locallyai.nl", False),
+    ("aion", "Aion Group", "Quant optimisation for financial products", "aiongp.com"),
+    ("verticallm", "Verticallm", "Supply chain strategy, delivered by AI", "verticallm.ai"),
+    ("tradeflow", "tradeflow.so", "Trading dashboard & trade replay", "tradeflow.so"),
+    ("locally", "Locally", "Local-first AI for one-person businesses", "locallyai.nl"),
 ]
+
+TREEMARK = ROOT / "src/verticallm-treemark.png"
+LOCALLY_ICON = Path.home() / "Projects/brands/locally/delivery/symbol/locally-symbol-app-icon.svg"
+
+
+def logo_tile(key, x, y, size):
+    """Each venture's own app-icon: brand colour tile + mark (official assets, not redrawn)."""
+    r = size * 0.24
+    k = size / 256
+    tile = lambda fill: f'<rect x="{x}" y="{y}" width="{size}" height="{size}" rx="{r}" fill="{fill}"/>'
+    if key == "aion":
+        return tile(CORAL) + symbol("dark", x + size * 0.18, y + size * 0.18, size * 0.64, "#FFFFFF", "#FFFFFF")
+    if key == "tradeflow":  # LogoIcon from tradeflow.so (viewBox 500), white on brand orange
+        m = size * 0.5 / 500
+        paths = ("M0 0H3.4722C95.5196 0 170.139 74.6192 170.139 166.667V166.667H0V0Z"
+                 "M500 0H333.333C241.286 0 166.667 74.6192 166.667 166.667V166.667H500V0Z"
+                 "M333.333 500L333.333 329.861C333.333 237.814 258.714 163.194 166.666 163.194V163.194L166.666 500L333.333 500Z")
+        return tile("#F94616") + (f'<path transform="translate({x + size*0.25} {y + size*0.25}) scale({m:.5f})" '
+                                  f'd="{paths}" fill="#FFFFFF"/>')
+    if key == "locally":  # official app icon, recoloured to the org avatar (volt tile, ink mark)
+        svg = LOCALLY_ICON.read_text()
+        inner = re.search(r"<g transform.*</g>", svg, re.S).group(0)
+        inner = inner.replace("#CBFF4D", "#0F1113")
+        return tile("#CBFF4D") + f'<g transform="translate({x} {y}) scale({k:.5f})">{inner}</g>'
+    if key == "verticallm":
+        from PIL import Image
+        im = Image.open(TREEMARK).convert("RGBA"); im.thumbnail((192, 192))
+        buf = io.BytesIO(); im.save(buf, "PNG", optimize=True)
+        b64 = base64.b64encode(buf.getvalue()).decode()
+        pad = size * 0.18
+        return tile("#C38A1F") + (f'<image x="{x+pad}" y="{y+pad}" width="{size-2*pad}" height="{size-2*pad}" '
+                                  f'href="data:image/png;base64,{b64}"/>')
 
 
 def venture(theme, v):
-    num, name, role, l1, l2, url, lead = v
-    s = Svg(432, 188, theme); t = s.t
-    frame(s, 14)
-    if lead:
-        s.add(f'<path d="M26 1.5H86" stroke="{CORAL}" stroke-width="3"/>')
-    s.text(26, 38, num, "JBM", 400, 11.5, CORAL, track=0.1)
-    s.text(406, 38, role.upper(), "JBM", 400, 10.5, t["faint"], track=0.14, anchor="end")
-    s.text(26, 84, name, "Outfit", 500, 27, t["fg"], track=-0.02)
-    s.text(26, 116, l1, "Outfit", 400, 15, t["muted"])
-    s.text(26, 137, l2, "Outfit", 400, 15, t["muted"])
-    s.add(f'<path d="M26 156H406" stroke="{t["line"]}"/>')
-    s.text(26, 175, url, "JBM", 400, 11.5, t["muted"], track=0.04)
-    s.text(406, 175, "↗", "JBM", 400, 13, CORAL, anchor="end")
-    return s.render(f"{name} — {l1} {l2} {url}")
+    key, name, desc, url = v
+    s = Svg(432, 112, theme); t = s.t
+    frame(s, 16)
+    s.add(logo_tile(key, 24, 28, 56))
+    s.text(100, 52, name, "Outfit", 500, 21, t["fg"], track=-0.015)
+    s.text(100, 76, desc, "Outfit", 400, 13.5, t["muted"])
+    s.text(408, 52, "↗", "JBM", 400, 14, t["faint"], anchor="end")
+    return s.render(f"{name} — {desc} ({url})")
 
 
 PRINCIPLES = [
@@ -188,18 +199,17 @@ PRINCIPLES = [
 
 
 def principles(theme):
-    s = Svg(W, 214, theme); t = s.t
+    s = Svg(W, 182, theme); t = s.t
     frame(s, 16)
     cw = W / 4
     for i, (a, b, c, d) in enumerate(PRINCIPLES):
         x = i * cw + 26
         if i:
-            s.add(f'<path d="M{i*cw} 26V188" stroke="{t["line"]}"/>')
-        s.text(x, 46, f"0{i+1}", "JBM", 400, 11.5, CORAL, track=0.1)
-        s.text(x, 90, a, "Outfit", 500, 21, t["fg"], track=-0.02)
-        s.text(x, 116, b, "Outfit", 500, 21, t["muted"], track=-0.02)
-        s.text(x, 156, c, "Outfit", 400, 12.8, t["muted"])
-        s.text(x, 175, d, "Outfit", 400, 12.8, t["muted"])
+            s.add(f'<path d="M{i*cw} 30V152" stroke="{t["line"]}"/>')
+        s.text(x, 62, a, "Outfit", 500, 21, t["fg"], track=-0.02)
+        s.text(x, 88, b, "Outfit", 500, 21, t["muted"], track=-0.02)
+        s.text(x, 128, c, "Outfit", 400, 12.8, t["muted"])
+        s.text(x, 147, d, "Outfit", 400, 12.8, t["muted"])
     return s.render("Principles: Data first, AI second. Evidence by default. No model lock-in. You keep the keys.")
 
 
@@ -261,8 +271,8 @@ def main():
         files[f"s-stack-{th}"] = section(th, "03", "Toolkit", "What I build with.")
         files[f"s-contact-{th}"] = section(th, "04", "Contact", "Let's talk.",
                                            "Working on a financial product with a decision to optimise? Plan a call.")
-        for v in VENTURES:
-            files[f"v-{v[0]}-{th}"] = venture(th, v)
+        for i, v in enumerate(VENTURES, 1):
+            files[f"v-0{i}-{th}"] = venture(th, v)
         files[f"principles-{th}"] = principles(th)
         files[f"stack-{th}"] = stack(th)
         files[f"btn-call-{th}"] = button(th, "Plan a call", primary=True)
