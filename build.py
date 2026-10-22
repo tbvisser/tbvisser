@@ -291,15 +291,17 @@ def principles(theme):
 ICONS = ROOT / "src/icons"  # simple-icons (CC0), rendered monochrome
 
 LAYERS = [
-    ("L4", "Interface", [("TypeScript", "typescript"), ("React", "react"), ("Next.js", "nextdotjs"), ("Vite", "vite"),
+    ("λ", "Languages", [("Python", "python"), ("C++", "cplusplus"), ("Rust", "rust"), ("Go", "go"),
+                        ("TypeScript", "typescript"), ("SQL", "postgresql"), ("Cython", None), ("Bash", "gnubash")]),
+    ("L4", "Interface", [("React", "react"), ("Next.js", "nextdotjs"), ("Vite", "vite"),
                          ("Tailwind", "tailwindcss"), ("tRPC", "trpc"), ("Electron", "electron"), ("lightweight-charts", "tradingview")]),
     ("L3", "Agents & inference", [("Anthropic", "anthropic"), ("OpenAI", "openai"), ("OpenRouter", "openrouter"), ("Ollama", "ollama"),
                                   ("MCP", "modelcontextprotocol"), ("FastAPI", "fastapi"), ("LangSmith", "langchain")]),
-    ("L2", "Models & research", [("Python", "python"), ("PyTorch", "pytorch"), ("CUDA", "nvidia"), ("Hugging Face", "huggingface"),
-                                 ("Qlib", None), ("Kronos", None), ("NumPy", "numpy"), ("pandas", "pandas")]),
+    ("L2", "Models & research", [("PyTorch", "pytorch"), ("CUDA", "nvidia"), ("Hugging Face", "huggingface"), ("scikit-learn", "scikitlearn"),
+                                 ("Qlib", None), ("Kronos", None), ("NumPy", "numpy"), ("pandas", "pandas"), ("Polars", "polars")]),
     ("L1", "Data & retrieval", [("PostgreSQL", "postgresql"), ("pgvector", None), ("Supabase", "supabase"), ("Drizzle", "drizzle"),
-                                ("Docling", None), ("spaCy", None), ("Presidio", None)]),
-    ("L0", "Runtime", [("Docker", "docker"), ("GitHub Actions", "githubactions"), ("Vercel", "vercel"), ("Linux", "linux")]),
+                                ("DuckDB", "duckdb"), ("Redis", "redis"), ("Kafka", "apachekafka"), ("Docling", None), ("Presidio", None)]),
+    ("L0", "Runtime", [("Docker", "docker"), ("Kubernetes", "kubernetes"), ("GitHub Actions", "githubactions"), ("Vercel", "vercel"), ("Linux", "linux")]),
 ]
 METHODS = "mean-variance · risk parity · VaR / ES · walk-forward · point-in-time · RankIC · quantile bands · TCA"
 
